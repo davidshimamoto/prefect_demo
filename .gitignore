@@ -1,2 +1,5 @@
 .claude
 .venv
+config
+data
+dbt
