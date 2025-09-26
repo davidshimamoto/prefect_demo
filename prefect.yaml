@@ -1,0 +1,73 @@
+# Welcome to your prefect.yaml file! You can use this file for storing and managing
+# configuration for deploying your flows. We recommend committing this file to source
+# control along with your flow code.
+
+# Generic metadata about this project
+name: prefect_tuva_demo
+prefect-version: 3.4.19
+
+# build section defines how to build the Docker image
+build:
+  - prefect_docker.deployments.steps.build_docker_image:
+      id: build-image
+      requires: prefect-docker>=0.3.0
+      image_name: prefect-tuva-demo
+      tag: latest
+      dockerfile: Dockerfile
+
+# push section defines how to push the image to a registry (optional)
+push:
+  - prefect_docker.deployments.steps.push_docker_image:
+      requires: prefect-docker>=0.3.0
+      image_name: "{{ build-image.image }}"
+      tag: latest
+
+# the deployments section allows you to provide configuration for deploying flows
+deployments:
+  # Process-based deployments (existing)
+  - name: duckdb_demo_process
+    entrypoint: src.flows.duckdb_demo:dbt_flow
+    work_pool:
+        name: my-process-work-pool
+        work_queue_name: default
+
+  - name: tuva_demo_process
+    entrypoint: src.flows.tuva_demo:tuva_demo_flow
+    work_pool:
+        name: my-process-work-pool
+        work_queue_name: default
+
+  # Docker-based deployments
+  - name: duckdb_demo_docker
+    entrypoint: src.flows.duckdb_demo:dbt_flow
+    build:
+      - prefect_docker.deployments.steps.build_docker_image:
+          id: build-image
+          requires: prefect-docker>=0.3.0
+          image_name: prefect-tuva-demo
+          tag: latest
+          dockerfile: Dockerfile
+    work_pool:
+        name: my-docker-work-pool
+        work_queue_name: default
+        job_variables:
+          image: "{{ build-image.image }}"
+          env:
+            PREFECT_API_URL: "{{ prefect.api_url }}"
+
+  - name: tuva_demo_docker
+    entrypoint: src.flows.tuva_demo:tuva_demo_flow
+    build:
+      - prefect_docker.deployments.steps.build_docker_image:
+          id: build-image
+          requires: prefect-docker>=0.3.0
+          image_name: prefect-tuva-demo
+          tag: latest
+          dockerfile: Dockerfile
+    work_pool:
+        name: my-docker-work-pool
+        work_queue_name: default
+        job_variables:
+          image: "{{ build-image.image }}"
+          env:
+            PREFECT_API_URL: "{{ prefect.api_url }}"
