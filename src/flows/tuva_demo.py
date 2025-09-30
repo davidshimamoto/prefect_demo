@@ -181,7 +181,7 @@ def verify_results(db_path: Path) -> dict:
 
 @flow(name="Tuva Health Demo", log_prints=True)
 def tuva_demo_flow(
-    repo_url: str = "https://github.com/tuva-health/demo",
+    repo_url: str,
     target_dir: Optional[str] = None,
     db_path: Optional[str] = None
 ) -> dict:
@@ -200,8 +200,8 @@ def tuva_demo_flow(
     logger.info("Starting Tuva Health Demo Flow")
 
     # Convert string paths to Path objects if provided
-    target_path = Path(target_dir) if target_dir else None
-    db_path_obj = Path(db_path) if db_path else None
+    target_path = Path(target_dir) if target_dir and target_dir != "None" else None
+    db_path_obj = Path(db_path) if db_path and db_path != "None" else None
 
     # Clone the repository
     project_dir = clone_repository(repo_url, target_path)
@@ -237,5 +237,5 @@ def tuva_demo_flow(
     }
 
 if __name__ == "__main__":
-    result = tuva_demo_flow()
+    result = tuva_demo_flow(repo_url="https://github.com/tuva-health/demo")
     print(f"Flow completed: {result}")

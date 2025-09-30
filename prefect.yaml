@@ -16,58 +16,70 @@ build:
       dockerfile: Dockerfile
 
 # push section defines how to push the image to a registry (optional)
-push:
-  - prefect_docker.deployments.steps.push_docker_image:
-      requires: prefect-docker>=0.3.0
-      image_name: "{{ build-image.image }}"
-      tag: latest
+push: null
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
   # Process-based deployments (existing)
   - name: duckdb_demo_process
-    entrypoint: src.flows.duckdb_demo:dbt_flow
+    entrypoint: src/flows/duckdb_demo.py:dbt_flow
     work_pool:
         name: my-process-work-pool
         work_queue_name: default
 
   - name: tuva_demo_process
-    entrypoint: src.flows.tuva_demo:tuva_demo_flow
+    entrypoint: src/flows/tuva_demo.py:tuva_demo_flow
+    work_pool:
+        name: my-process-work-pool
+        work_queue_name: default
+
+  - name: tuva_snowflake_demo
+    entrypoint: src/flows/tuva_snowflake_demo.py:tuva_snowflake_flow
+    parameters:
+      repo_url: "https://github.com/tuva-health/demo"
+      connector_block_name: "tuva-snowflake-conn"
     work_pool:
         name: my-process-work-pool
         work_queue_name: default
 
   # Docker-based deployments
   - name: duckdb_demo_docker
-    entrypoint: src.flows.duckdb_demo:dbt_flow
-    build:
-      - prefect_docker.deployments.steps.build_docker_image:
-          id: build-image
-          requires: prefect-docker>=0.3.0
-          image_name: prefect-tuva-demo
-          tag: latest
-          dockerfile: Dockerfile
+    entrypoint: src/flows/duckdb_demo.py:dbt_flow
+    pull: null
     work_pool:
         name: my-docker-work-pool
         work_queue_name: default
         job_variables:
           image: "{{ build-image.image }}"
+          image_pull_policy: Never
           env:
             PREFECT_API_URL: "{{ prefect.api_url }}"
 
   - name: tuva_demo_docker
-    entrypoint: src.flows.tuva_demo:tuva_demo_flow
-    build:
-      - prefect_docker.deployments.steps.build_docker_image:
-          id: build-image
-          requires: prefect-docker>=0.3.0
-          image_name: prefect-tuva-demo
-          tag: latest
-          dockerfile: Dockerfile
+    entrypoint: src/flows/tuva_demo.py:tuva_demo_flow
+    parameters:
+      repo_url: "https://github.com/tuva-health/demo"
+    pull: null
     work_pool:
         name: my-docker-work-pool
         work_queue_name: default
         job_variables:
           image: "{{ build-image.image }}"
+          image_pull_policy: Never
+          env:
+            PREFECT_API_URL: "{{ prefect.api_url }}"
+
+  - name: tuva_snowflake_demo_docker
+    entrypoint: src/flows/tuva_snowflake_demo.py:tuva_snowflake_flow
+    parameters:
+      repo_url: "https://github.com/tuva-health/demo"
+      connector_block_name: "tuva-snowflake-conn"
+    pull: null
+    work_pool:
+        name: my-docker-work-pool
+        work_queue_name: default
+        job_variables:
+          image: "{{ build-image.image }}"
+          image_pull_policy: Never
           env:
             PREFECT_API_URL: "{{ prefect.api_url }}"
