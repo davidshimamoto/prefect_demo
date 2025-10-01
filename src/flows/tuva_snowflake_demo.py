@@ -2,6 +2,7 @@
 """
 Demo script for cloning and running the Tuva Project Demo with Snowflake database.
 This combines the Tuva Health repository with Snowflake connectivity using Prefect connector blocks.
+This will only download the repo once. If you wish to clone it again, delete the existing folder.
 
 Requirements:
 - prefect-snowflake library installed
@@ -112,8 +113,22 @@ def setup_snowflake_profile(project_dir: Path, connector_block_name: str) -> Pat
     # Handle optional private key authentication
     private_key_section = ""
     if hasattr(connector.credentials, 'private_key') and connector.credentials.private_key:
+        # Write private key to file
+        private_key_path = profiles_dir / "snowflake_private_key.p8"
+        private_key_value = connector.credentials.private_key.get_secret_value()
+
+        # Write as binary if bytes, otherwise as text
+        if isinstance(private_key_value, bytes):
+            with open(private_key_path, 'wb') as f:
+                f.write(private_key_value)
+        else:
+            with open(private_key_path, 'w') as f:
+                f.write(private_key_value)
+
+        logger.info(f"Private key written to {private_key_path}")
+
         private_key_section = f"""
-      private_key: {connector.credentials.private_key.get_secret_value()}"""
+      private_key_path: {private_key_path}"""
         if hasattr(connector.credentials, 'private_key_passphrase') and connector.credentials.private_key_passphrase:
             private_key_section += f"""
       private_key_passphrase: {connector.credentials.private_key_passphrase.get_secret_value()}"""

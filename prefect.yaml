@@ -20,7 +20,7 @@ push: null
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-  # Process-based deployments (existing)
+  # Process-based deployments
   - name: duckdb_demo_process
     entrypoint: src/flows/duckdb_demo.py:dbt_flow
     work_pool:
@@ -38,6 +38,17 @@ deployments:
     parameters:
       repo_url: "https://github.com/tuva-health/demo"
       connector_block_name: "tuva-snowflake-conn"
+    work_pool:
+        name: my-process-work-pool
+        work_queue_name: default
+
+  # GitHub-based deployment (pulls code from repository)
+  - name: duckdb_demo_github
+    entrypoint: src/flows/duckdb_demo.py:dbt_flow
+    pull:
+      - prefect.deployments.steps.git_clone:
+          repository: https://github.com/davidshimamoto/prefect_demo.git
+          branch: main
     work_pool:
         name: my-process-work-pool
         work_queue_name: default
@@ -83,3 +94,13 @@ deployments:
           image_pull_policy: Never
           env:
             PREFECT_API_URL: "{{ prefect.api_url }}"
+
+  - name: basic_test
+    entrypoint: basic_test.py:basic_test_flow
+    pull:
+      - prefect.deployments.steps.git_clone:
+          repository: https://github.com/davidshimamoto/prefect_demo
+          branch: main
+    work_pool:
+        name: my-docker-work-pool
+        work_queue_name: default
